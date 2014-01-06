@@ -1,5 +1,5 @@
 import pygame
-from Tile_Map import *
+import Tile_Map
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -10,7 +10,7 @@ pygame.init()
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("platformer")
 
-tile_map = TileMap()
+tile_map = Tile_Map.TileMap()
 
 done = False
 clock = pygame.time.Clock()
