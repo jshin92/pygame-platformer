@@ -22,6 +22,17 @@ while not done:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                player.x_accel -= 3
+            elif event.key == pygame.K_RIGHT:
+                player.x_accel += 3
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                player.x_accel = 0
+            elif event.key == pygame.K_RIGHT:
+                player.x_accel = 0
+
 
     player.update()
     screen.fill(BLACK)
