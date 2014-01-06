@@ -4,6 +4,7 @@ import Player
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
 
 FPS = 30
 size = [400, 400]
@@ -12,7 +13,7 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Platformer")
 
 tile_map = Tile_Map.TileMap()
-player = Player.Player(screen)
+player = Player.Player(screen, tile_map)
 
 done = False
 clock = pygame.time.Clock()
@@ -23,7 +24,6 @@ while not done:
             done = True
 
     player.update()
-
     screen.fill(BLACK)
     for row in range(tile_map.num_rows):
         for col in range(tile_map.num_cols):
@@ -32,6 +32,8 @@ while not done:
                 cur_color = BLACK
             elif cur_tile == 1:
                 cur_color = WHITE
+            elif cur_tile == 2:
+                cur_color = BLUE
             pygame.draw.rect(screen, cur_color, [tile_map.tile_width * col,
                                                  tile_map.tile_height * row,
                                                  tile_map.tile_width,
