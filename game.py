@@ -1,5 +1,6 @@
 import pygame
 import Tile_Map
+import Player
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -8,9 +9,10 @@ FPS = 30
 size = [400, 400]
 pygame.init()
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption("platformer")
+pygame.display.set_caption("Platformer")
 
 tile_map = Tile_Map.TileMap()
+player = Player.Player(screen)
 
 done = False
 clock = pygame.time.Clock()
@@ -19,6 +21,8 @@ while not done:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
+
+    player.update()
 
     screen.fill(BLACK)
     for row in range(tile_map.num_rows):
@@ -32,6 +36,7 @@ while not done:
                                                  tile_map.tile_height * row,
                                                  tile_map.tile_width,
                                                  tile_map.tile_height])
+    player.draw()
 
     pygame.display.flip()
     clock.tick(FPS)
