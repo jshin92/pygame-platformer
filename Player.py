@@ -26,78 +26,94 @@ class Player:
     def draw(self):
         pygame.draw.rect(self.screen, self.color, [self.x, self.y, self.width, self.height])
 
+    def both_tiles_clear(self, first_tile, second_tile):
+        return self.tile_map.tiles[first_tile[0]][first_tile[1]] != 0 and \
+               self.tile_map.tiles[second_tile[0]][second_tile[1]] != 0
+
+    # returns corners in order of:
+    # top_left, top_right, bot_left, bot_right
+    def calculate_corners(self, dir, projected_x, projected_y):
+        if dir == "UPDOWN":
+            projected_dir = projected_y
+        elif dir == "LEFTRIGHT":
+            projected_dir = projected_x
+
+        top_left = [int(projected_dir / self.tile_map.tile_height),
+                    int(self.x / self.tile_map.tile_width)]
+
+        top_right = [int(projected_dir / self.tile_map.tile_height),
+                     int((self.x + self.width) / self.tile_map.tile_width)]
+
+        bot_left = [int((projected_dir + self.height) / self.tile_map.tile_height),
+                    int(self.x / self.tile_map.tile_width)]
+
+        bot_right = [int((projected_dir + self.height) / self.tile_map.tile_height),
+                     int((self.x + self.width) / self.tile_map.tile_width)]
+
+        return top_left, top_right, bot_left, bot_right
+
+    # returns [row, col] of block to right of player
+    def get_block_to_right(self, projected_x):
+        return [int((self.y + self.height - 1)/self.tile_map.tile_height),
+                int((projected_x + self.width + 1)/self.tile_map.tile_width)]
+
+    # returns [row, col] of block bottom left of player
+    def get_bot_left(self, projected_x):
+        return [int((self.y + self.height - 1)/self.tile_map.tile_height),
+                int((projected_x - 1)/self.tile_map.tile_width)]
+
+    # returns [row, col] of block top left of player
+    def get_top_left(self, projected_x):
+        return [int((self.y + 1)/self.tile_map.tile_height),
+                int((projected_x - 1)/self.tile_map.tile_width)]
+
     def update(self):
         self.y_velo += self.gravity
         ## check for collision w/ respect to y direction
-        cur_tile_row = int(self.y // self.tile_map.tile_height)
-        closest_blocked_tile_row = -1
         # going up (jumping)
         # TODO: DO GOING UP LOGIC!
         if self.y_velo < 0:
             pass
         # going down
         else:
-            left_line_col = int(self.x // self.tile_map.tile_width)
-            right_line_col = int((self.x + self.width) // self.tile_map.tile_width)
+            projected_y = self.y + self.y_velo
+            _, _, bot_left, bot_right = self.calculate_corners("UPDOWN", 0, projected_y)
 
-            # find closest tile that blocks the player
-            for row in range(cur_tile_row, self.tile_map.num_rows):
-                for col in range(left_line_col, right_line_col + 1):
-                    if self.tile_map.tiles[row][col] == 0:
-                        closest_blocked_tile_row = row
-                        break
-                if closest_blocked_tile_row != -1:
-                    break
-
-            block_dist = closest_blocked_tile_row * self.tile_map.tile_height - self.y - self.height
-            # don't let player teleport to above block by sliding into a block
-            if block_dist < 0:
-                block_dist = 0
-            # can move only by the minimum betwixt the distance from the player to the nearest thing
-            # blocking it or the distance that it wanted to go
-            self.y += min(self.y_velo, block_dist)
-            # can't move down when on top of a block
-            if block_dist == 0:
+            # only fall down if both tiles below player are blank
+            if self.both_tiles_clear(bot_left, bot_right):
+                self.y = projected_y
+            else:
+                # can't translate full projected length--block in way, so
+                # go the delta
+                self.y += self.tile_map.tile_height * bot_left[0] - self.y - self.height
                 self.y_velo = 0
 
-        ## check for collision with respect to the x direction
+        ## check for collision w/ respect to x direction
         self.x_velo += self.x_accel
         self.x_velo *= self.friction
-
-        cur_tile_col = int(self.x // self.tile_map.tile_width)
-        top_line_row = int(self.y // self.tile_map.tile_height)
-        bot_line_row = int((self.y + self.height) // self.tile_map.tile_height)
-        closest_blocked_tile_col = -1
         # going right
-        '''
         if self.x_velo > 0:
-            for col in range(cur_tile_col, self.tile_map.num_cols):
-                for row in range(top_line_row, bot_line_row):
-                    if self.tile_map.tiles[row][col] == 0:
-                        closest_blocked_tile_col = col
-                        break
-                if closest_blocked_tile_col != -1:
-                    break
-
-            block_dist = closest_blocked_tile_col * self.tile_map.tile_width - self.x - self.width
-            if block_dist < 0:
-                block_dist = 0
-            self.x += min(self.x_velo, block_dist)
-
+            projected_x = self.x + self.x_velo
+            right_block = self.get_block_to_right(projected_x)
+            # can move to the right as long as there is no tile blocking the player
+            if self.tile_map.tiles[right_block[0]][right_block[1]] != 0:
+                self.x += self.x_velo
+            # can't move the projected distance due to a wall, so move as far as possible (delta)
+            else:
+                self.x += right_block[1] * self.tile_map.tile_width - self.x - self.width
+                self.x_velo = 0
         # going left
         elif self.x_velo < 0:
-            for col in range(cur_tile_col, -1, -1):
-                for row in range(top_line_row, bot_line_row + 1):
-                    if self.tile_map.tiles[row][col] == 0:
-                        closest_blocked_tile_col = col
-                        break
-                if closest_blocked_tile_col != -1:
-                    break
-            block_dist = (1 + closest_blocked_tile_col) * self.tile_map.tile_width - self.x
-            if block_dist == 0:
+            projected_x = self.x + self.x_velo
+            bot_left = self.get_bot_left(projected_x)
+            top_left = self.get_top_left(projected_x)
+            if self.tile_map.tiles[bot_left[0]][bot_left[1]] != 0 and self.tile_map.tiles[top_left[0]][top_left[1]] != 0:
+                self.x += self.x_velo
+            else:
+                self.x += (bot_left[1] + 1) * self.tile_map.tile_width - self.x
                 self.x_velo = 0
-            self.x -= min(abs(self.x_velo), abs(block_dist))
-        '''
-        self.x += self.x_velo
+
+
+
 
 
