@@ -27,6 +27,8 @@ while not done:
                 player.x_accel -= 3
             elif event.key == pygame.K_RIGHT:
                 player.x_accel += 3
+            elif event.key == pygame.K_SPACE:
+                player.y_velo = -12
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 player.x_accel = 0

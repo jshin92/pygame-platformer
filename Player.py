@@ -30,54 +30,53 @@ class Player:
         return self.tile_map.tiles[first_tile[0]][first_tile[1]] != 0 and \
                self.tile_map.tiles[second_tile[0]][second_tile[1]] != 0
 
-    # returns corners in order of:
-    # top_left, top_right, bot_left, bot_right
-    def calculate_corners(self, dir, projected_x, projected_y):
-        if dir == "UPDOWN":
-            projected_dir = projected_y
-        elif dir == "LEFTRIGHT":
-            projected_dir = projected_x
 
-        top_left = [int(projected_dir / self.tile_map.tile_height),
-                    int(self.x / self.tile_map.tile_width)]
+    # returns the top right and bot right tiles used for collision checking
+    def get_right_collisions(self, projected_x):
+        return [[int((self.y + 1)/self.tile_map.tile_height),
+                 int((projected_x + self.width + 1)/self.tile_map.tile_width)],
+                [int((self.y + self.height - 1)/self.tile_map.tile_height),
+                 int((projected_x + self.width + 1)/self.tile_map.tile_width)]]
 
-        top_right = [int(projected_dir / self.tile_map.tile_height),
-                     int((self.x + self.width) / self.tile_map.tile_width)]
+    # returns the bot left and top left tiles used for collision checking
+    def get_left_collisions(self, projected_x):
+        return [[int((self.y + self.height - 1)/self.tile_map.tile_height),
+                 int((projected_x - 1)/self.tile_map.tile_width)],
+                [int((self.y + 1)/self.tile_map.tile_height),
+                 int((projected_x - 1)/self.tile_map.tile_width)]]
 
-        bot_left = [int((projected_dir + self.height) / self.tile_map.tile_height),
-                    int(self.x / self.tile_map.tile_width)]
+    # returns the top left and top right tiles used for checking if the
+    # left side of the player is hitting a tile
+    def get_up_collisions(self, projected_y):
+        return [[int((projected_y - 1)/self.tile_map.tile_height),
+                int((self.x + 1)/self.tile_map.tile_width)],
+                [int((projected_y - 1)/self.tile_map.tile_height),
+                int((self.x + self.width - 1)/self.tile_map.tile_width)]]
 
-        bot_right = [int((projected_dir + self.height) / self.tile_map.tile_height),
-                     int((self.x + self.width) / self.tile_map.tile_width)]
-
-        return top_left, top_right, bot_left, bot_right
-
-    # returns [row, col] of block to right of player
-    def get_block_to_right(self, projected_x):
-        return [int((self.y + self.height - 1)/self.tile_map.tile_height),
-                int((projected_x + self.width + 1)/self.tile_map.tile_width)]
-
-    # returns [row, col] of block bottom left of player
-    def get_bot_left(self, projected_x):
-        return [int((self.y + self.height - 1)/self.tile_map.tile_height),
-                int((projected_x - 1)/self.tile_map.tile_width)]
-
-    # returns [row, col] of block top left of player
-    def get_top_left(self, projected_x):
-        return [int((self.y + 1)/self.tile_map.tile_height),
-                int((projected_x - 1)/self.tile_map.tile_width)]
+    # returns bot left, bot right
+    def get_down_collisions(self, projected_y):
+        return [[int((projected_y + self.height + 1)/self.tile_map.tile_height),
+                 int((self.x + 1)/self.tile_map.tile_width)],
+                [int((projected_y + self.height + 1)/self.tile_map.tile_height),
+                 int((self.x + self.width - 1)/self.tile_map.tile_width)]]
 
     def update(self):
         self.y_velo += self.gravity
         ## check for collision w/ respect to y direction
         # going up (jumping)
-        # TODO: DO GOING UP LOGIC!
         if self.y_velo < 0:
-            pass
+            projected_y = self.y + self.y_velo
+            top_left, top_right = self.get_up_collisions(projected_y)
+            if self.both_tiles_clear(top_left, top_right):
+                self.y = projected_y
+            else:
+                self.y += (1 + top_left[0]) * self.tile_map.tile_height - self.y
+                self.y_velo = 0
+
         # going down
         else:
             projected_y = self.y + self.y_velo
-            _, _, bot_left, bot_right = self.calculate_corners("UPDOWN", 0, projected_y)
+            bot_left, bot_right = self.get_down_collisions(projected_y)
 
             # only fall down if both tiles below player are blank
             if self.both_tiles_clear(bot_left, bot_right):
@@ -94,20 +93,19 @@ class Player:
         # going right
         if self.x_velo > 0:
             projected_x = self.x + self.x_velo
-            right_block = self.get_block_to_right(projected_x)
+            top_right, bot_right = self.get_right_collisions(projected_x)
             # can move to the right as long as there is no tile blocking the player
-            if self.tile_map.tiles[right_block[0]][right_block[1]] != 0:
+            if self.both_tiles_clear(top_right, bot_right) != 0:
                 self.x += self.x_velo
             # can't move the projected distance due to a wall, so move as far as possible (delta)
             else:
-                self.x += right_block[1] * self.tile_map.tile_width - self.x - self.width
+                self.x += top_right[1] * self.tile_map.tile_width - self.x - self.width
                 self.x_velo = 0
         # going left
         elif self.x_velo < 0:
             projected_x = self.x + self.x_velo
-            bot_left = self.get_bot_left(projected_x)
-            top_left = self.get_top_left(projected_x)
-            if self.tile_map.tiles[bot_left[0]][bot_left[1]] != 0 and self.tile_map.tiles[top_left[0]][top_left[1]] != 0:
+            bot_left, top_left = self.get_left_collisions(projected_x)
+            if self.both_tiles_clear(bot_left, top_left):
                 self.x += self.x_velo
             else:
                 self.x += (bot_left[1] + 1) * self.tile_map.tile_width - self.x
