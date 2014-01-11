@@ -4,7 +4,8 @@ RED = (255, 0, 0)
 
 
 class Player:
-    def __init__(self, screen, tile_map):
+    def __init__(self, dimensions, screen, tile_map, camera):
+        self.dimensions = dimensions
         self.screen = screen
         self.tile_map = tile_map
         self.color = RED
@@ -23,8 +24,10 @@ class Player:
         self.moving_left = False
         self.moving_right = False
 
+        self.camera = camera
+
     def draw(self):
-        pygame.draw.rect(self.screen, self.color, [self.x, self.y, self.width, self.height])
+        pygame.draw.rect(self.screen, self.color, [self.x - self.camera.x, self.y - self.camera.y, self.width, self.height])
 
     def both_tiles_clear(self, first_tile, second_tile):
         return self.tile_map.tiles[first_tile[0]][first_tile[1]] != 0 and \
@@ -110,6 +113,9 @@ class Player:
             else:
                 self.x += (bot_left[1] + 1) * self.tile_map.tile_width - self.x
                 self.x_velo = 0
+
+        self.camera.x = self.x - self.dimensions[0]/2
+        self.camera.y = self.y - self.dimensions[1]/2
 
 
 
