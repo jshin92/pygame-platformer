@@ -5,7 +5,8 @@ RED = (255, 0, 0)
 
 class Player:
     def __init__(self, dimensions, screen, tile_map, camera):
-        self.dimensions = dimensions
+        self.screen_width = dimensions[0]
+        self.screen_height = dimensions[1]
         self.screen = screen
         self.tile_map = tile_map
         self.color = RED
@@ -27,12 +28,12 @@ class Player:
         self.camera = camera
 
     def draw(self):
-        pygame.draw.rect(self.screen, self.color, [self.x - self.camera.x, self.y - self.camera.y, self.width, self.height])
+        pygame.draw.rect(self.screen, self.color, [self.x - self.camera.x, self.y - self.camera.y,
+                                                   self.width, self.height])
 
     def both_tiles_clear(self, first_tile, second_tile):
         return self.tile_map.tiles[first_tile[0]][first_tile[1]] != 0 and \
                self.tile_map.tiles[second_tile[0]][second_tile[1]] != 0
-
 
     # returns the top right and bot right tiles used for collision checking
     def get_right_collisions(self, projected_x):
@@ -114,8 +115,9 @@ class Player:
                 self.x += (bot_left[1] + 1) * self.tile_map.tile_width - self.x
                 self.x_velo = 0
 
-        self.camera.x = self.x - self.dimensions[0]/2
-        self.camera.y = self.y - self.dimensions[1]/2
+        # set camera's top left corner such that the player is in the middle
+        self.camera.x = min(max(self.x - self.screen_width/2, 0), self.screen_width/2)
+        self.camera.y = min(max(self.y - self.screen_height/2, 0), self.screen_height/2)
 
 
 
